@@ -8,6 +8,12 @@
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
+  <link rel="stylesheet" href="css/vendor.min.css">
+  <link rel="stylesheet" href="css/styles.min.css">
+  <link rel="stylesheet" href="assets/css/custom.css">
+  <script src="js/modernizr.min.js"></script>
+  <script src="js/vendor.min.js"></script>
+
   <script src="assets/js/react.development.js"></script>
   <script src="assets/js/react-dom.development.js"></script>
   <script src="assets/js/react-router-dom.min.js"></script>

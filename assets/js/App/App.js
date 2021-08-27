@@ -1,11 +1,165 @@
 const Link = ReactRouterDOM.Link;
 const Route = ReactRouterDOM.Route;
+const useState = React.useState;
 
 function App(props) {
   const [t, i18n] = ReactI18next.useTranslation('translations');
 
-  React.useEffect(() => {
+  const [basket, setBasket] = useState({
+    products: [
+      {
+        id: 1,
+        name: 'foo',
+      },
+      {
+        id: 2,
+        name: 'bar',
+      },
+      {
+        id: 3,
+        name: 'baz',
+      },
+    ],
+  });
 
+  function removeFromBasket(productId) {
+    const products = basket.products.slice(0);
+    products.splice(products.findIndex((p) => p.id === productId), 1);
+    setBasket({
+      ...basket,
+      products: products,
+    });
+  }
+
+  React.useEffect(() => {
+    function stickyHeader() {
+      var $body = $('body');
+      var $navbar = $('.navbar-sticky');
+      var $topbarH = $('.topbar').outerHeight();
+      var $navbarH = $navbar.outerHeight();
+      if($navbar.length) {
+        $(window).on('scroll', function() {
+          if($(this).scrollTop() > $topbarH) {
+            $navbar.addClass('navbar-stuck');
+            if(! $navbar.hasClass('navbar-ghost')) {
+              $body.css('padding-top', $navbarH);
+            }
+          } else {
+            $navbar.removeClass('navbar-stuck');
+            $body.css('padding-top', 0);
+          }
+        });
+      }
+    }
+    stickyHeader();
+
+    // Off-Canvas Container
+    //---------------------------------------------------------
+    function offcanvasOpen(e) {
+      var $body = $('body');
+      var targetEl = $(e.target).attr('href');
+      $(targetEl).addClass('active');
+      $body.css('overflow', 'hidden');
+      $body.addClass('offcanvas-open');
+      e.preventDefault();
+    }
+    function offcanvasClose() {
+      var $body = $('body');
+      $body.removeClass('offcanvas-open');
+      setTimeout(function() {
+        $body.css('overflow', 'visible');
+        $('.offcanvas-container').removeClass('active');
+      }, 450);
+    }
+    $('[data-toggle="offcanvas"]').on('click', offcanvasOpen);
+    $('.site-backdrop').on('click', offcanvasClose);
+
+
+    // Off-Canvas Menu
+    //---------------------------------------------------------
+    var menuInitHeight = $( '.offcanvas-menu .menu' ).height(),
+        backBtnText = 'Back',
+        subMenu = $( '.offcanvas-menu .offcanvas-submenu' );
+    
+    subMenu.each( function () {
+      $( this ).prepend( '<li class="back-btn"><a href="#">' + backBtnText + '</a></li>' );
+    } );
+
+    var hasChildLink = $( '.has-children .sub-menu-toggle' ),
+        backBtn = $( '.offcanvas-menu .offcanvas-submenu .back-btn' );
+
+    backBtn.on( 'click', function ( e ) {
+      var self = this,
+        parent = $( self ).parent(),
+        siblingParent = $( self ).parent().parent().siblings().parent(),
+        menu = $( self ).parents( '.menu' );
+      
+      parent.removeClass( 'in-view' );
+      siblingParent.removeClass( 'off-view' );
+      if ( siblingParent.attr( 'class' ) === 'menu' ) {
+        menu.css( 'height', menuInitHeight );
+      } else {
+        menu.css( 'height', siblingParent.height() );
+      }
+  
+      e.preventDefault();
+    } );
+
+    hasChildLink.on( 'click', function ( e ) {
+      var self = this,
+        parent = $( self ).parent().parent().parent(),
+        menu = $( self ).parents( '.menu' );
+
+      parent.addClass( 'off-view' );
+      $( self ).parent().parent().find( '> .offcanvas-submenu' ).addClass( 'in-view' );
+      menu.css( 'height', $( self ).parent().parent().find( '> .offcanvas-submenu' ).height() );
+
+      e.preventDefault();
+      return false;
+    } );
+
+    // Site Search
+    //---------------------------------------------------------
+    function searchActions( openTrigger, closeTrigger, clearTrigger, target ) {
+      $( openTrigger ).on( 'click', function() {
+        $( target ).addClass( 'search-visible' );
+        setTimeout( function() {
+          $( target + ' > input' ).focus();
+        }, 200);
+      } );
+      $( closeTrigger ).on( 'click', function() {
+        $( target ).removeClass( 'search-visible' );
+      } );
+      $( clearTrigger ).on('click', function(){
+        $( target + ' > input' ).val('');
+        setTimeout(function() {
+          $( target + ' > input' ).focus();
+        }, 200);
+      });
+    }
+    searchActions( '.toolbar .tools .search', '.close-search', '.clear-search', '.site-search' );
+
+    // Animated Scroll to Top Button
+    //------------------------------------------------------------------------------
+    var $scrollTop = $( '.scroll-to-top-btn' );
+    if ( $scrollTop.length > 0 ) {
+      $( window ).on( 'scroll', function () {
+        if ( $( this ).scrollTop() > 600 ) {
+          $scrollTop.addClass( 'visible' );
+        } else {
+          $scrollTop.removeClass( 'visible' );
+        }
+      } );
+      $scrollTop.on( 'click', function ( e ) {
+        e.preventDefault();
+        $( 'html' ).velocity( 'scroll', {
+          offset: 0,
+          duration: 1200,
+          easing: 'easeOutExpo',
+          mobileHA: false
+        } );
+      } );
+    }
   }, []);
 
   window.mobileAndTabletCheck = function() {
@@ -17,13 +171,317 @@ function App(props) {
   return (
     <ReactRouterDOM.HashRouter>
       <div className="App">
-        
+        <div className="offcanvas-container" id="shop-categories">
+          <div className="offcanvas-header">
+            <h3 className="offcanvas-title">Shop Categories</h3>
+          </div>
+          <nav className="offcanvas-menu">
+            <ul className="menu">
+              <li className="has-children"><span><a href="#">Men's Shoes</a><span className="sub-menu-toggle"></span></span>
+                <ul className="offcanvas-submenu">
+                  <li><a href="#">Sneakers</a></li>
+                  <li><a href="#">Loafers</a></li>
+                  <li><a href="#">Boat Shoes</a></li>
+                  <li><a href="#">Sandals</a></li>
+                  <li><a href="#">View All</a></li>
+                </ul>
+              </li>
+              <li className="has-children"><span><a href="#">Women's Shoes</a><span className="sub-menu-toggle"></span></span>
+                <ul className="offcanvas-submenu">
+                  <li><a href="#">Sandals</a></li>
+                  <li><a href="#">Flats</a></li>
+                  <li><a href="#">Sneakers</a></li>
+                  <li><a href="#">Heels</a></li>
+                  <li><a href="#">View All</a></li>
+                </ul>
+              </li>
+              <li className="has-children"><span><a href="#">Men's Clothing</a><span className="sub-menu-toggle"></span></span>
+                <ul className="offcanvas-submenu">
+                  <li><a href="#">Shirts &amp; Tops</a></li>
+                  <li><a href="#">Pants</a></li>
+                  <li><a href="#">Jackets</a></li>
+                  <li><a href="#">View All</a></li>
+                </ul>
+              </li>
+              <li className="has-children"><span><a href="#">Women's Clothing</a><span className="sub-menu-toggle"></span></span>
+                <ul className="offcanvas-submenu">
+                  <li><a href="#">Dresses</a></li>
+                  <li><a href="#">Shirts &amp; Tops</a></li>
+                  <li><a href="#">Shorts</a></li>
+                  <li><a href="#">Swimwear</a></li>
+                  <li><a href="#">View All</a></li>
+                </ul>
+              </li>
+              <li className="has-children"><span><a href="#">Kid's Shoes</a><span className="sub-menu-toggle"></span></span>
+                <ul className="offcanvas-submenu">
+                  <li><a href="#">Boots</a></li>
+                  <li><a href="#">Sandals</a></li>
+                  <li><a href="#">Crib Shoes</a></li>
+                  <li><a href="#">Loafers</a></li>
+                  <li><a href="#">View All</a></li>
+                </ul>
+              </li>
+              <li className="has-children"><span><a href="#">Bags</a><span className="sub-menu-toggle"></span></span>
+                <ul className="offcanvas-submenu">
+                  <li><a href="#">Handbags</a></li>
+                  <li><a href="#">Backpacks</a></li>
+                  <li><a href="#">Luggage</a></li>
+                  <li><a href="#">Wallets</a></li>
+                  <li><a href="#">View All</a></li>
+                </ul>
+              </li>
+              <li className="has-children"><span><a href="#">Accessories</a><span className="sub-menu-toggle"></span></span>
+                <ul className="offcanvas-submenu">
+                  <li><a href="#">Sunglasses</a></li>
+                  <li><a href="#">Hats</a></li>
+                  <li><a href="#">Watches</a></li>
+                  <li><a href="#">Jewelry</a></li>
+                  <li><a href="#">Belts</a></li>
+                  <li><a href="#">View All</a></li>
+                </ul>
+              </li>
+            </ul>
+          </nav>
+        </div>
 
-        <Route path="/" exact component={Home} />
-        
-        <footer>
-          <div>Copyright © 2021 Eshop. All Rights Reserved.</div>
-        </footer>
+        <div className="offcanvas-container" id="mobile-menu">
+          <nav className="offcanvas-menu">
+            <ul className="menu">
+              <li className="">
+                <span><a href="#"><span>Home</span></a></span>
+              </li>
+              <li className="has-children"><span><a href="#"><span>Categories</span></a><span className="sub-menu-toggle"></span></span>
+                <ul className="offcanvas-submenu">
+                  <li className="has-children"><span><a href="#"><span>Shop Grid</span></a><span className="sub-menu-toggle"></span></span>
+                    <ul className="offcanvas-submenu">
+                      <li><a href="#">Grid Left Sidebar</a></li>
+                      <li><a href="#">Grid Right Sidebar</a></li>
+                      <li><a href="#">Grid No Sidebar</a></li>
+                    </ul>
+                  </li>
+                  <li className="has-children"><span><a href="shop-list-ls.html"><span>Shop List</span></a><span className="sub-menu-toggle"></span></span>
+                    <ul className="offcanvas-submenu">
+                      <li><a href="#">List Left Sidebar</a></li>
+                      <li><a href="#">List Right Sidebar</a></li>
+                      <li><a href="#">List No Sidebar</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li className="">
+                <span><a href="#"><span>Favourites</span></a></span>
+              </li>
+              <li className="">
+                <span><a href="#"><span>Basket</span></a></span>
+              </li>
+              <li className="">
+                <span><a href="#"><span>Contact</span></a></span>
+              </li>
+            </ul>
+          </nav>
+        </div>
+
+        <div className="topbar">
+          <div className="topbar-column">
+            <a className="hidden-md-down" href="mailto:support@eshop.com">
+              <i className="icon-mail"></i>&nbsp; support@eshop.com
+            </a>
+            <a className="hidden-md-down" href="tel:00112223333">
+              <i className="icon-bell"></i>&nbsp; 00 11 222 3333
+            </a>
+            <a className="social-button sb-facebook shape-none sb-dark" href="#" target="_blank">
+              <i className="socicon-facebook"></i>
+            </a>
+          </div>
+        </div>
+
+        <header className="navbar navbar-sticky">
+          <form className="site-search" method="get">
+            <input type="text" name="site_search" placeholder="Type to search..." />
+            <div className="search-tools"><span className="clear-search">Clear</span><span className="close-search"><i className="icon-cross"></i></span></div>
+          </form>
+          <div className="site-branding">
+            <div className="inner">
+              <a className="offcanvas-toggle cats-toggle" href="#shop-categories" data-toggle="offcanvas"></a>
+              <a className="offcanvas-toggle menu-toggle" href="#mobile-menu" data-toggle="offcanvas"></a>
+              <a className="site-logo" href="index.html"><img src="img/logo/logo.png" alt="Unishop" /></a>
+            </div>
+          </div>
+          <nav className="site-menu">
+            <ul>
+              <li className=""><a href="index.html"><span>Home</span></a></li>
+              <li>
+                <a href="shop-grid-ls.html"><span>Categories</span></a>
+                <ul className="sub-menu">
+                    <li><a href="shop-categories.html">Shop Categories</a></li>
+                  <li className="has-children"><a href="shop-grid-ls.html"><span>Shop Grid</span></a>
+                    <ul className="sub-menu">
+                        <li><a href="shop-grid-ls.html">Grid Left Sidebar</a></li>
+                        <li><a href="shop-grid-rs.html">Grid Right Sidebar</a></li>
+                        <li><a href="shop-grid-ns.html">Grid No Sidebar</a></li>
+                    </ul>
+                  </li>
+                  <li className="has-children"><a href="shop-list-ls.html"><span>Shop List</span></a>
+                    <ul className="sub-menu">
+                        <li><a href="shop-list-ls.html">List Left Sidebar</a></li>
+                        <li><a href="shop-list-rs.html">List Right Sidebar</a></li>
+                        <li><a href="shop-list-ns.html">List No Sidebar</a></li>
+                    </ul>
+                  </li>
+                    <li><a href="shop-single.html">Single Product</a></li>
+                    <li><a href="cart.html">Cart</a></li>
+                  <li className="has-children"><a href="checkout-address.html"><span>Checkout</span></a>
+                    <ul className="sub-menu">             
+                        <li><a href="checkout-address.html">Address</a></li>
+                        <li><a href="checkout-shipping.html">Shipping</a></li>
+                        <li><a href="checkout-payment.html">Payment</a></li>
+                        <li><a href="checkout-review.html">Review</a></li>
+                        <li><a href="checkout-complete.html">Complete</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li className=""><a href="#"><span>Favourites</span></a></li>
+              <li className=""><a href="#"><span>Basket</span></a></li>
+              <li className=""><a href="#"><span>Contact</span></a></li>
+            </ul>
+          </nav>
+
+          <div className="toolbar">
+            <div className="inner">
+              <div className="tools">
+                <div className="search"><i className="icon-search"></i></div>
+                <div className="cart">
+                  <a href="cart.html"></a>
+                  <i className="icon-bag"></i>
+                  <span className="count">3</span>
+                  <span className="subtotal">$289.68</span>
+                  <div className="toolbar-dropdown">
+                    {
+                      basket.products.map((product, i) => {
+                        return (
+                          <div
+                            className="dropdown-product-item"
+                            key={i}
+                          >
+                            <span
+                              className="dropdown-product-remove"
+                              onClick={removeFromBasket.bind(this, product.id)}
+                            >
+                              <i className="icon-cross"></i>
+                            </span>
+                            <a className="dropdown-product-thumb" href="shop-single.html">
+                              <img src="img/cart-dropdown/01.jpg" alt="Product" />
+                            </a>
+                            <div className="dropdown-product-info">
+                              <a className="dropdown-product-title" href="shop-single.html">
+                                {product.name}
+                              </a>
+                              <span className="dropdown-product-details">1 x $43.90</span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    }
+                    {/* <div className="dropdown-product-item"><span className="dropdown-product-remove"><i className="icon-cross"></i></span><a className="dropdown-product-thumb" href="shop-single.html"><img src="img/cart-dropdown/01.jpg" alt="Product" /></a>
+                      <div className="dropdown-product-info"><a className="dropdown-product-title" href="shop-single.html">Unionbay Park</a><span className="dropdown-product-details">1 x $43.90</span></div>
+                    </div>
+                    <div className="dropdown-product-item"><span className="dropdown-product-remove"><i className="icon-cross"></i></span><a className="dropdown-product-thumb" href="shop-single.html"><img src="img/cart-dropdown/02.jpg" alt="Product" /></a>
+                      <div className="dropdown-product-info"><a className="dropdown-product-title" href="shop-single.html">Daily Fabric Cap</a><span className="dropdown-product-details">2 x $24.89</span></div>
+                    </div>
+                    <div className="dropdown-product-item"><span className="dropdown-product-remove"><i className="icon-cross"></i></span><a className="dropdown-product-thumb" href="shop-single.html"><img src="img/cart-dropdown/03.jpg" alt="Product" /></a>
+                      <div className="dropdown-product-info"><a className="dropdown-product-title" href="shop-single.html">Haan Crossbody</a><span className="dropdown-product-details">1 x $200.00</span></div>
+                    </div> */}
+                    <div className="toolbar-dropdown-group">
+                      <div className="column"><span className="text-lg">Total:</span></div>
+                      <div className="column text-right"><span className="text-lg text-medium">$289.68&nbsp;</span></div>
+                    </div>
+                    <div className="toolbar-dropdown-group">
+                      <div className="column"><a className="btn btn-sm btn-block btn-secondary" href="cart.html">View Cart</a></div>
+                      <div className="column"><a className="btn btn-sm btn-block btn-success" href="checkout-address.html">Checkout</a></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="offcanvas-wrapper">
+          <Route path="/" exact component={Home} />
+
+          <footer className="site-footer">
+            <div className="container">
+              <div className="row">
+                <div className="col-lg-4 col-md-6">
+                  <section className="widget widget-light-skin">
+                    <h3 className="widget-title">Get In Touch With Us</h3>
+                    <p className="text-white">Phone: 11 22 333 4444</p>
+                    <ul className="list-unstyled text-sm text-white">
+                      <li><span className="opacity-50">Monday-Friday:</span>9.00 am - 8.00 pm</li>
+                      <li><span className="opacity-50">Saturday:</span>10.00 am - 6.00 pm</li>
+                    </ul>
+                    <p><a className="navi-link-light" href="#">support@eshop.com</a></p><a className="social-button shape-circle sb-facebook sb-light-skin" href="#"><i className="socicon-facebook"></i></a><a className="social-button shape-circle sb-twitter sb-light-skin" href="#"><i className="socicon-twitter"></i></a><a className="social-button shape-circle sb-instagram sb-light-skin" href="#"><i className="socicon-instagram"></i></a><a className="social-button shape-circle sb-google-plus sb-light-skin" href="#"><i className="socicon-googleplus"></i></a>
+                  </section>
+                </div>
+                {/* <div className="col-lg-3 col-md-6">
+                  <section className="widget widget-light-skin">
+                    <h3 className="widget-title">Our Mobile App</h3><a className="market-button apple-button mb-light-skin" href="#"><span className="mb-subtitle">Download on the</span><span className="mb-title">App Store</span></a><a className="market-button google-button mb-light-skin" href="#"><span className="mb-subtitle">Download on the</span><span className="mb-title">Google Play</span></a><a className="market-button windows-button mb-light-skin" href="#"><span className="mb-subtitle">Download on the</span><span className="mb-title">Windows Store</span></a>
+                  </section>
+                </div> */}
+                <div className="col-lg-4 col-md-6">
+                  <section className="widget widget-links widget-light-skin">
+                    <h3 className="widget-title">About Us</h3>
+                    <ul>
+                      <li><a href="#">Home</a></li>
+                      <li><a href="#">Categories</a></li>
+                      <li><a href="#">Favourites</a></li>
+                      <li><a href="#">Basket</a></li>
+                      <li><a href="#">Contact</a></li>
+                    </ul>
+                  </section>
+                </div>
+                <div className="col-lg-4 col-md-6">
+                  <section className="widget widget-links widget-light-skin">
+                    <h3 className="widget-title">Account &amp; Shipping Info</h3>
+                    <ul>
+                      <li><a href="#">Shipping Rates & Policies</a></li>
+                      <li><a href="#">Refunds & Replacements</a></li>
+                      <li><a href="#">Taxes</a></li>
+                      <li><a href="#">Delivery Info</a></li>
+                      <li><a href="#">Affiliate Program</a></li>
+                    </ul>
+                  </section>
+                </div>
+              </div>
+              <hr className="hr-light mt-2 margin-bottom-2x" />
+              <div className="row">
+                <div className="col-md-7 padding-bottom-1x">
+                  <div className="margin-bottom-1x" style={{maxWidth: '615px'}}><img src="img/payment_methods.png" alt="Payment Methods" />
+                  </div>
+                </div>
+                <div className="col-md-5 padding-bottom-1x">
+                  <div className="margin-top-1x hidden-md-up"></div>
+                  <form className="subscribe-form" action={`${baseUrl}subscribe`} method="post" target="_blank" noValidate>
+                    <div className="clearfix">
+                      <div className="input-group input-light">
+                        <input className="form-control" type="email" name="EMAIL" placeholder="Your e-mail" /><span className="input-group-addon"><i className="icon-mail"></i></span>
+                      </div>
+                      <div style={{position: 'absolute', left: '-5000px'}} aria-hidden="true">
+                        <input type="text" name="b_c7103e2c981361a6639545bd5_1194bb7544" tabIndex="-1" />
+                      </div>
+                      <button className="btn btn-primary" type="submit"><i className="icon-check"></i></button>
+                    </div><span className="form-text text-sm text-white opacity-50">Subscribe to our Newsletter to receive early discount offers, latest news, sales and promo information.</span>
+                  </form>
+                </div>
+              </div>
+              <p className="footer-copyright">© All rights reserved. Made with &nbsp;<i className="icon-heart text-danger"></i><a href="https://tsalikidis.dev/" target="_blank"> &nbsp;by tsalik</a></p>
+            </div>
+          </footer>
+        </div>
+
+        <a className="scroll-to-top-btn" href="#" style={{display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center'}}><i className="icon-arrow-up"></i></a>
+        <div className="site-backdrop"></div>
       </div>
     </ReactRouterDOM.HashRouter>
   );
