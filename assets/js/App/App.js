@@ -1,6 +1,7 @@
 const Link = ReactRouterDOM.Link;
 const Route = ReactRouterDOM.Route;
 const useState = React.useState;
+const useEffect = React.useEffect;
 
 function App(props) {
   const [t, i18n] = ReactI18next.useTranslation('translations');
@@ -21,6 +22,76 @@ function App(props) {
       },
     ],
   });
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    $('.categories-menu > a').on('mouseover', function(e) {
+      $('.sub-menu.categories').removeAttr('style');
+    });
+    $('.categories-menu').on('click', function() {
+      $('.sub-menu.categories').css('display', 'none');
+    });
+
+    axios.get(`${baseUrl}api/categories`).then((response) => {
+      const c = response.data;
+      c.forEach((category) => {
+        if (category.parent) {
+          const parent = c.find((_category) => _category.id == category.parent);
+          parent.subcategories = parent.subcategories || [];
+          parent.subcategories.push(category);
+        }
+      });
+      setCategories(c);
+      setTimeout(() => {
+        // Off-Canvas Menu
+        //---------------------------------------------------------
+        var menuInitHeight = $( '.offcanvas-menu .menu' ).height(),
+        backBtnText = 'Back',
+        subMenu = $( '.offcanvas-menu .offcanvas-submenu' );
+
+        subMenu.each( function () {
+          $( this ).prepend( '<li class="back-btn"><a href="#">' + backBtnText + '</a></li>' );
+        } );
+
+        var hasChildLink = $( '.has-children .sub-menu-toggle' ),
+            backBtn = $( '.offcanvas-menu .offcanvas-submenu .back-btn' );
+
+        backBtn.on( 'click', function ( e ) {
+          var self = this,
+            parent = $( self ).parent(),
+            siblingParent = $( self ).parent().parent().siblings().parent(),
+            menu = $( self ).parents( '.menu' );
+          
+          parent.removeClass( 'in-view' );
+          siblingParent.removeClass( 'off-view' );
+          if ( siblingParent.attr( 'class' ) === 'menu' ) {
+            menu.css( 'height', menuInitHeight );
+          } else {
+            menu.css( 'height', siblingParent.height() );
+          }
+
+          e.preventDefault();
+        } );
+
+        hasChildLink.on( 'click', function ( e ) {
+          var self = this,
+            parent = $( self ).parent().parent().parent(),
+            menu = $( self ).parents( '.menu' );
+
+          parent.addClass( 'off-view' );
+          $( self ).parent().parent().find( '> .offcanvas-submenu' ).addClass( 'in-view' );
+          menu.css( 'height', $( self ).parent().parent().find( '> .offcanvas-submenu' ).height() );
+
+          e.preventDefault();
+          return false;
+        } );
+      });
+    });
+
+    return () => {
+      
+    }
+  }, []);
 
   function removeFromBasket(productId) {
     const products = basket.products.slice(0);
@@ -73,50 +144,6 @@ function App(props) {
     }
     $('[data-toggle="offcanvas"]').on('click', offcanvasOpen);
     $('.site-backdrop').on('click', offcanvasClose);
-
-
-    // Off-Canvas Menu
-    //---------------------------------------------------------
-    var menuInitHeight = $( '.offcanvas-menu .menu' ).height(),
-        backBtnText = 'Back',
-        subMenu = $( '.offcanvas-menu .offcanvas-submenu' );
-    
-    subMenu.each( function () {
-      $( this ).prepend( '<li class="back-btn"><a href="#">' + backBtnText + '</a></li>' );
-    } );
-
-    var hasChildLink = $( '.has-children .sub-menu-toggle' ),
-        backBtn = $( '.offcanvas-menu .offcanvas-submenu .back-btn' );
-
-    backBtn.on( 'click', function ( e ) {
-      var self = this,
-        parent = $( self ).parent(),
-        siblingParent = $( self ).parent().parent().siblings().parent(),
-        menu = $( self ).parents( '.menu' );
-      
-      parent.removeClass( 'in-view' );
-      siblingParent.removeClass( 'off-view' );
-      if ( siblingParent.attr( 'class' ) === 'menu' ) {
-        menu.css( 'height', menuInitHeight );
-      } else {
-        menu.css( 'height', siblingParent.height() );
-      }
-  
-      e.preventDefault();
-    } );
-
-    hasChildLink.on( 'click', function ( e ) {
-      var self = this,
-        parent = $( self ).parent().parent().parent(),
-        menu = $( self ).parents( '.menu' );
-
-      parent.addClass( 'off-view' );
-      $( self ).parent().parent().find( '> .offcanvas-submenu' ).addClass( 'in-view' );
-      menu.css( 'height', $( self ).parent().parent().find( '> .offcanvas-submenu' ).height() );
-
-      e.preventDefault();
-      return false;
-    } );
 
     // Site Search
     //---------------------------------------------------------
@@ -177,69 +204,34 @@ function App(props) {
           </div>
           <nav className="offcanvas-menu">
             <ul className="menu">
-              <li className="has-children"><span><a href="#">Men's Shoes</a><span className="sub-menu-toggle"></span></span>
-                <ul className="offcanvas-submenu">
-                  <li><a href="#">Sneakers</a></li>
-                  <li><a href="#">Loafers</a></li>
-                  <li><a href="#">Boat Shoes</a></li>
-                  <li><a href="#">Sandals</a></li>
-                  <li><a href="#">View All</a></li>
-                </ul>
-              </li>
-              <li className="has-children"><span><a href="#">Women's Shoes</a><span className="sub-menu-toggle"></span></span>
-                <ul className="offcanvas-submenu">
-                  <li><a href="#">Sandals</a></li>
-                  <li><a href="#">Flats</a></li>
-                  <li><a href="#">Sneakers</a></li>
-                  <li><a href="#">Heels</a></li>
-                  <li><a href="#">View All</a></li>
-                </ul>
-              </li>
-              <li className="has-children"><span><a href="#">Men's Clothing</a><span className="sub-menu-toggle"></span></span>
-                <ul className="offcanvas-submenu">
-                  <li><a href="#">Shirts &amp; Tops</a></li>
-                  <li><a href="#">Pants</a></li>
-                  <li><a href="#">Jackets</a></li>
-                  <li><a href="#">View All</a></li>
-                </ul>
-              </li>
-              <li className="has-children"><span><a href="#">Women's Clothing</a><span className="sub-menu-toggle"></span></span>
-                <ul className="offcanvas-submenu">
-                  <li><a href="#">Dresses</a></li>
-                  <li><a href="#">Shirts &amp; Tops</a></li>
-                  <li><a href="#">Shorts</a></li>
-                  <li><a href="#">Swimwear</a></li>
-                  <li><a href="#">View All</a></li>
-                </ul>
-              </li>
-              <li className="has-children"><span><a href="#">Kid's Shoes</a><span className="sub-menu-toggle"></span></span>
-                <ul className="offcanvas-submenu">
-                  <li><a href="#">Boots</a></li>
-                  <li><a href="#">Sandals</a></li>
-                  <li><a href="#">Crib Shoes</a></li>
-                  <li><a href="#">Loafers</a></li>
-                  <li><a href="#">View All</a></li>
-                </ul>
-              </li>
-              <li className="has-children"><span><a href="#">Bags</a><span className="sub-menu-toggle"></span></span>
-                <ul className="offcanvas-submenu">
-                  <li><a href="#">Handbags</a></li>
-                  <li><a href="#">Backpacks</a></li>
-                  <li><a href="#">Luggage</a></li>
-                  <li><a href="#">Wallets</a></li>
-                  <li><a href="#">View All</a></li>
-                </ul>
-              </li>
-              <li className="has-children"><span><a href="#">Accessories</a><span className="sub-menu-toggle"></span></span>
-                <ul className="offcanvas-submenu">
-                  <li><a href="#">Sunglasses</a></li>
-                  <li><a href="#">Hats</a></li>
-                  <li><a href="#">Watches</a></li>
-                  <li><a href="#">Jewelry</a></li>
-                  <li><a href="#">Belts</a></li>
-                  <li><a href="#">View All</a></li>
-                </ul>
-              </li>
+              {
+                categories.filter((c) => c.subcategories).map((category, i) => {
+                  return(
+                    <li
+                      className="has-children"
+                      key={i}
+                    >
+                      <span>
+                        <Link to={`/categories/${category.id}`}><span>{category.name}</span></Link>
+                        <span className="sub-menu-toggle"></span>
+                      </span>
+                      <ul className="offcanvas-submenu">
+                        {
+                          category.subcategories.map((subcategory, j) => {
+                            return (
+                              <li
+                                key={j}
+                              >
+                                <Link to={`/categories/${subcategory.id}`}>{subcategory.name}</Link>
+                              </li>
+                            );
+                          })
+                        }
+                      </ul>
+                    </li>
+                  );
+                })
+              }
             </ul>
           </nav>
         </div>
@@ -252,20 +244,34 @@ function App(props) {
               </li>
               <li className="has-children"><span><a href="#"><span>Categories</span></a><span className="sub-menu-toggle"></span></span>
                 <ul className="offcanvas-submenu">
-                  <li className="has-children"><span><a href="#"><span>Shop Grid</span></a><span className="sub-menu-toggle"></span></span>
-                    <ul className="offcanvas-submenu">
-                      <li><a href="#">Grid Left Sidebar</a></li>
-                      <li><a href="#">Grid Right Sidebar</a></li>
-                      <li><a href="#">Grid No Sidebar</a></li>
-                    </ul>
-                  </li>
-                  <li className="has-children"><span><a href="shop-list-ls.html"><span>Shop List</span></a><span className="sub-menu-toggle"></span></span>
-                    <ul className="offcanvas-submenu">
-                      <li><a href="#">List Left Sidebar</a></li>
-                      <li><a href="#">List Right Sidebar</a></li>
-                      <li><a href="#">List No Sidebar</a></li>
-                    </ul>
-                  </li>
+                  {
+                    categories.filter((c) => c.subcategories).map((category, i) => {
+                      return (
+                        <li 
+                          className="has-children"
+                          key={i}
+                        >
+                          <span>
+                            <Link to={`/categories/${category.id}`}><span>{category.name}</span></Link>
+                            <span className="sub-menu-toggle"></span>
+                          </span>
+                          <ul className="offcanvas-submenu">
+                            {
+                              category.subcategories.map((subcategory, j) => {
+                                return (
+                                  <li
+                                    key={j}
+                                  >
+                                    <Link to={`/categories/${subcategory.id}`}>{subcategory.name}</Link>
+                                  </li>
+                                );
+                              })
+                            }
+                          </ul>
+                        </li>
+                      );
+                    })
+                  }
                 </ul>
               </li>
               <li className="">
@@ -304,41 +310,40 @@ function App(props) {
             <div className="inner">
               <a className="offcanvas-toggle cats-toggle" href="#shop-categories" data-toggle="offcanvas"></a>
               <a className="offcanvas-toggle menu-toggle" href="#mobile-menu" data-toggle="offcanvas"></a>
-              <a className="site-logo" href="index.html"><img src="img/logo/logo.png" alt="Unishop" /></a>
+              <Link to="/" className="site-logo"><img src="img/logo/logo.png" alt="Unishop" /></Link>
             </div>
           </div>
           <nav className="site-menu">
             <ul>
-              <li className=""><a href="index.html"><span>Home</span></a></li>
-              <li>
-                <a href="shop-grid-ls.html"><span>Categories</span></a>
-                <ul className="sub-menu">
-                    <li><a href="shop-categories.html">Shop Categories</a></li>
-                  <li className="has-children"><a href="shop-grid-ls.html"><span>Shop Grid</span></a>
-                    <ul className="sub-menu">
-                        <li><a href="shop-grid-ls.html">Grid Left Sidebar</a></li>
-                        <li><a href="shop-grid-rs.html">Grid Right Sidebar</a></li>
-                        <li><a href="shop-grid-ns.html">Grid No Sidebar</a></li>
-                    </ul>
-                  </li>
-                  <li className="has-children"><a href="shop-list-ls.html"><span>Shop List</span></a>
-                    <ul className="sub-menu">
-                        <li><a href="shop-list-ls.html">List Left Sidebar</a></li>
-                        <li><a href="shop-list-rs.html">List Right Sidebar</a></li>
-                        <li><a href="shop-list-ns.html">List No Sidebar</a></li>
-                    </ul>
-                  </li>
-                    <li><a href="shop-single.html">Single Product</a></li>
-                    <li><a href="cart.html">Cart</a></li>
-                  <li className="has-children"><a href="checkout-address.html"><span>Checkout</span></a>
-                    <ul className="sub-menu">             
-                        <li><a href="checkout-address.html">Address</a></li>
-                        <li><a href="checkout-shipping.html">Shipping</a></li>
-                        <li><a href="checkout-payment.html">Payment</a></li>
-                        <li><a href="checkout-review.html">Review</a></li>
-                        <li><a href="checkout-complete.html">Complete</a></li>
-                    </ul>
-                  </li>
+              <li className=""><Link to="/"><span>Home</span></Link></li>
+              <li className="categories-menu">
+                <a><span>Categories</span></a>
+                <ul className="sub-menu categories">
+                  {
+                    categories.filter((c) => c.subcategories).map((category, i) => {
+                      return (
+                        <li
+                          className="has-children"
+                          key={i}
+                        >
+                          <Link to={`/categories/${category.id}`}><span>{category.name}</span></Link>
+                          <ul className="sub-menu">
+                            {
+                              category.subcategories.map((subcategory, j) => {
+                                return (
+                                  <li
+                                    key={j}
+                                  >
+                                    <Link to={`/categories/${subcategory.id}`}>{subcategory.name}</Link>
+                                  </li>
+                                );
+                              })
+                            }
+                          </ul>
+                        </li>
+                      );
+                    })
+                  }
                 </ul>
               </li>
               <li className=""><a href="#"><span>Favourites</span></a></li>
@@ -383,15 +388,6 @@ function App(props) {
                         );
                       })
                     }
-                    {/* <div className="dropdown-product-item"><span className="dropdown-product-remove"><i className="icon-cross"></i></span><a className="dropdown-product-thumb" href="shop-single.html"><img src="img/cart-dropdown/01.jpg" alt="Product" /></a>
-                      <div className="dropdown-product-info"><a className="dropdown-product-title" href="shop-single.html">Unionbay Park</a><span className="dropdown-product-details">1 x $43.90</span></div>
-                    </div>
-                    <div className="dropdown-product-item"><span className="dropdown-product-remove"><i className="icon-cross"></i></span><a className="dropdown-product-thumb" href="shop-single.html"><img src="img/cart-dropdown/02.jpg" alt="Product" /></a>
-                      <div className="dropdown-product-info"><a className="dropdown-product-title" href="shop-single.html">Daily Fabric Cap</a><span className="dropdown-product-details">2 x $24.89</span></div>
-                    </div>
-                    <div className="dropdown-product-item"><span className="dropdown-product-remove"><i className="icon-cross"></i></span><a className="dropdown-product-thumb" href="shop-single.html"><img src="img/cart-dropdown/03.jpg" alt="Product" /></a>
-                      <div className="dropdown-product-info"><a className="dropdown-product-title" href="shop-single.html">Haan Crossbody</a><span className="dropdown-product-details">1 x $200.00</span></div>
-                    </div> */}
                     <div className="toolbar-dropdown-group">
                       <div className="column"><span className="text-lg">Total:</span></div>
                       <div className="column text-right"><span className="text-lg text-medium">$289.68&nbsp;</span></div>
@@ -409,6 +405,10 @@ function App(props) {
 
         <div className="offcanvas-wrapper">
           <Route path="/" exact component={Home} />
+          <Route path="/categories/:categoryId" exact component={Products} />
+          <Route path="/categories/:categoryId/:page" exact component={Products} />
+          <Route path="/products/:productId" exact component={Product} />
+          <Route path="/products/:productId/:productName" exact component={Product} />
 
           <footer className="site-footer">
             <div className="container">

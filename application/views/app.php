@@ -1,11 +1,11 @@
-<html>
+<html lang="el">
 <head>
   <meta charset="utf-8" />
   <title>Eshop</title>
   <link rel="icon" type="image/png" href="assets/img/logo.png"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="author" content="https://tsalikidis.dev">
-  
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
   <link rel="stylesheet" href="css/vendor.min.css">
@@ -25,6 +25,8 @@
   <script src="assets/js/i18n.js"></script>
   <script type="text/babel" src="assets/js/App/App.js"></script>
   <script type="text/babel" src="assets/js/Home/Home.js"></script>
+  <script type="text/babel" src="assets/js/Products/Products.js"></script>
+  <script type="text/babel" src="assets/js/Product/Product.js"></script>
 </head>
 <body>
   <div id='root'></div>
