@@ -2,38 +2,20 @@ const Link = ReactRouterDOM.Link;
 const Route = ReactRouterDOM.Route;
 const useState = React.useState;
 const useEffect = React.useEffect;
+const useLocation = React.useLocation;
 
 function App(props) {
   const [t, i18n] = ReactI18next.useTranslation('translations');
-
-  const [basket, setBasket] = useState({
-    products: [
-      {
-        id: 1,
-        name: 'foo',
-      },
-      {
-        id: 2,
-        name: 'bar',
-      },
-      {
-        id: 3,
-        name: 'baz',
-      },
-    ],
-  });
   const [categories, setCategories] = useState([]);
+  const [basketProducts, setBasketProducts] = useState([]);
+  const [basketTotal, setBasketTotal] = useState(0);
+  const [, updateState] = React.useState();
+  const forceUpdate = React.useCallback(() => updateState({}), []);
 
   useEffect(() => {
-    $('.categories-menu > a').on('mouseover', function(e) {
-      $('.sub-menu.categories').removeAttr('style');
-    });
-    $('.categories-menu').on('click', function() {
-      $('.sub-menu.categories').css('display', 'none');
-    });
-
     axios.get(`${baseUrl}api/categories`).then((response) => {
       const c = response.data;
+
       c.forEach((category) => {
         if (category.parent) {
           const parent = c.find((_category) => _category.id == category.parent);
@@ -41,160 +23,73 @@ function App(props) {
           parent.subcategories.push(category);
         }
       });
+
       setCategories(c);
+
       setTimeout(() => {
-        // Off-Canvas Menu
-        //---------------------------------------------------------
-        var menuInitHeight = $( '.offcanvas-menu .menu' ).height(),
-        backBtnText = 'Back',
-        subMenu = $( '.offcanvas-menu .offcanvas-submenu' );
-
-        subMenu.each( function () {
-          $( this ).prepend( '<li class="back-btn"><a href="#">' + backBtnText + '</a></li>' );
-        } );
-
-        var hasChildLink = $( '.has-children .sub-menu-toggle' ),
-            backBtn = $( '.offcanvas-menu .offcanvas-submenu .back-btn' );
-
-        backBtn.on( 'click', function ( e ) {
-          var self = this,
-            parent = $( self ).parent(),
-            siblingParent = $( self ).parent().parent().siblings().parent(),
-            menu = $( self ).parents( '.menu' );
-          
-          parent.removeClass( 'in-view' );
-          siblingParent.removeClass( 'off-view' );
-          if ( siblingParent.attr( 'class' ) === 'menu' ) {
-            menu.css( 'height', menuInitHeight );
-          } else {
-            menu.css( 'height', siblingParent.height() );
-          }
-
-          e.preventDefault();
-        } );
-
-        hasChildLink.on( 'click', function ( e ) {
-          var self = this,
-            parent = $( self ).parent().parent().parent(),
-            menu = $( self ).parents( '.menu' );
-
-          parent.addClass( 'off-view' );
-          $( self ).parent().parent().find( '> .offcanvas-submenu' ).addClass( 'in-view' );
-          menu.css( 'height', $( self ).parent().parent().find( '> .offcanvas-submenu' ).height() );
-
-          e.preventDefault();
-          return false;
-        } );
+        initCategoriesMenu();
       });
+    });
+
+    fixCategoriesMenu();
+    stickyHeader();
+    initOffCanvas();
+    searchActions( '.toolbar .tools .search', '.close-search', '.clear-search', '.site-search' );
+    initScrollToTop();
+
+    let storageBasket = localStorage.basket;
+    if (storageBasket) {
+      storageBasket = JSON.parse(storageBasket);
+    } else {
+      storageBasket = {};
+    }
+
+    const getBasketProductsFns = [];
+    
+    for (let productId in storageBasket) {
+      let promise = new Promise((resolve, reject) => {
+        axios.get(`${baseUrl}api/products/${productId}`).then((response) => {
+          resolve({
+            ...response.data,
+            quantity: storageBasket[productId],
+          });
+        });
+      });
+      getBasketProductsFns.push(promise);
+    }
+
+    basket.onAddProduct(() => {
+      setBasketProducts(basket.products);
+      forceUpdate();
+    });
+
+    basket.onRemoveProduct(() => {
+      setBasketProducts(basket.products);
+      forceUpdate();
+    });
+
+    Promise.all(getBasketProductsFns).then((products) => {
+      basket.products = products;
+      setBasketProducts(products);
     });
 
     return () => {
       
-    }
+    };
   }, []);
-
-  function removeFromBasket(productId) {
-    const products = basket.products.slice(0);
-    products.splice(products.findIndex((p) => p.id === productId), 1);
-    setBasket({
-      ...basket,
-      products: products,
-    });
-  }
 
   React.useEffect(() => {
-    function stickyHeader() {
-      var $body = $('body');
-      var $navbar = $('.navbar-sticky');
-      var $topbarH = $('.topbar').outerHeight();
-      var $navbarH = $navbar.outerHeight();
-      if($navbar.length) {
-        $(window).on('scroll', function() {
-          if($(this).scrollTop() > $topbarH) {
-            $navbar.addClass('navbar-stuck');
-            if(! $navbar.hasClass('navbar-ghost')) {
-              $body.css('padding-top', $navbarH);
-            }
-          } else {
-            $navbar.removeClass('navbar-stuck');
-            $body.css('padding-top', 0);
-          }
-        });
-      }
-    }
-    stickyHeader();
+    let total = 0;
+    basketProducts.forEach((product) => {
+      total += (product.discount_price || product.price) * product.quantity;
+    });
+    setBasketTotal(total);
+  }, [basketProducts.length]);
 
-    // Off-Canvas Container
-    //---------------------------------------------------------
-    function offcanvasOpen(e) {
-      var $body = $('body');
-      var targetEl = $(e.target).attr('href');
-      $(targetEl).addClass('active');
-      $body.css('overflow', 'hidden');
-      $body.addClass('offcanvas-open');
-      e.preventDefault();
-    }
-    function offcanvasClose() {
-      var $body = $('body');
-      $body.removeClass('offcanvas-open');
-      setTimeout(function() {
-        $body.css('overflow', 'visible');
-        $('.offcanvas-container').removeClass('active');
-      }, 450);
-    }
-    $('[data-toggle="offcanvas"]').on('click', offcanvasOpen);
-    $('.site-backdrop').on('click', offcanvasClose);
-
-    // Site Search
-    //---------------------------------------------------------
-    function searchActions( openTrigger, closeTrigger, clearTrigger, target ) {
-      $( openTrigger ).on( 'click', function() {
-        $( target ).addClass( 'search-visible' );
-        setTimeout( function() {
-          $( target + ' > input' ).focus();
-        }, 200);
-      } );
-      $( closeTrigger ).on( 'click', function() {
-        $( target ).removeClass( 'search-visible' );
-      } );
-      $( clearTrigger ).on('click', function(){
-        $( target + ' > input' ).val('');
-        setTimeout(function() {
-          $( target + ' > input' ).focus();
-        }, 200);
-      });
-    }
-    searchActions( '.toolbar .tools .search', '.close-search', '.clear-search', '.site-search' );
-
-    // Animated Scroll to Top Button
-    //------------------------------------------------------------------------------
-    var $scrollTop = $( '.scroll-to-top-btn' );
-    if ( $scrollTop.length > 0 ) {
-      $( window ).on( 'scroll', function () {
-        if ( $( this ).scrollTop() > 600 ) {
-          $scrollTop.addClass( 'visible' );
-        } else {
-          $scrollTop.removeClass( 'visible' );
-        }
-      } );
-      $scrollTop.on( 'click', function ( e ) {
-        e.preventDefault();
-        $( 'html' ).velocity( 'scroll', {
-          offset: 0,
-          duration: 1200,
-          easing: 'easeOutExpo',
-          mobileHA: false
-        } );
-      } );
-    }
-  }, []);
-
-  window.mobileAndTabletCheck = function() {
-    let check = false;
-    (function(a){if(/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a)||/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0,4))) check = true;})(navigator.userAgent||navigator.vendor||window.opera);
-    return check;
-  };
-
+  function removeFromBasket(productId) {
+    basket.removeProduct(productId);
+  }
+  
   return (
     <ReactRouterDOM.HashRouter>
       <div className="App">
@@ -278,7 +173,7 @@ function App(props) {
                 <span><a href="#"><span>Favourites</span></a></span>
               </li>
               <li className="">
-                <span><a href="#"><span>Basket</span></a></span>
+                <span><Link to="/basket"><span>Basket</span></Link></span>
               </li>
               <li className="">
                 <span><a href="#"><span>Contact</span></a></span>
@@ -347,7 +242,7 @@ function App(props) {
                 </ul>
               </li>
               <li className=""><a href="#"><span>Favourites</span></a></li>
-              <li className=""><a href="#"><span>Basket</span></a></li>
+              <li className=""><Link to="/basket"><span>Basket</span></Link></li>
               <li className=""><a href="#"><span>Contact</span></a></li>
             </ul>
           </nav>
@@ -357,13 +252,18 @@ function App(props) {
               <div className="tools">
                 <div className="search"><i className="icon-search"></i></div>
                 <div className="cart">
-                  <a href="cart.html"></a>
+                  <Link to="/basket"></Link>
                   <i className="icon-bag"></i>
-                  <span className="count">3</span>
-                  <span className="subtotal">$289.68</span>
+                  <span className="count">{basketProducts.length}</span>
+                  <span className="subtotal">{parseFloat(basketTotal).toFixed(2)}&nbsp;€</span>
                   <div className="toolbar-dropdown">
                     {
-                      basket.products.map((product, i) => {
+                      basketProducts.length === 0
+                        ? <div className="fs-12 my-1">Δεν έχετε προϊόντα στο καλάθι σας</div>
+                        : ''
+                    }
+                    {
+                      basketProducts.map((product, i) => {
                         return (
                           <div
                             className="dropdown-product-item"
@@ -371,18 +271,18 @@ function App(props) {
                           >
                             <span
                               className="dropdown-product-remove"
-                              onClick={removeFromBasket.bind(this, product.id)}
+                              onClick={() => removeFromBasket(product.id)}
                             >
                               <i className="icon-cross"></i>
                             </span>
                             <a className="dropdown-product-thumb" href="shop-single.html">
-                              <img src="img/cart-dropdown/01.jpg" alt="Product" />
+                              <img src={product.images[0]} alt="Product" />
                             </a>
                             <div className="dropdown-product-info">
-                              <a className="dropdown-product-title" href="shop-single.html">
+                              <Link className="dropdown-product-title" to={`/products/${product.id}/${product.name}`}>
                                 {product.name}
-                              </a>
-                              <span className="dropdown-product-details">1 x $43.90</span>
+                              </Link>
+                              <span className="dropdown-product-details">{product.quantity} x {parseFloat(product.discount_price || product.price).toFixed(2)}&nbsp;€</span>
                             </div>
                           </div>
                         );
@@ -390,11 +290,11 @@ function App(props) {
                     }
                     <div className="toolbar-dropdown-group">
                       <div className="column"><span className="text-lg">Total:</span></div>
-                      <div className="column text-right"><span className="text-lg text-medium">$289.68&nbsp;</span></div>
+                      <div className="column text-right"><span className="text-lg text-medium">{parseFloat(basketTotal).toFixed(2)}&nbsp;€</span></div>
                     </div>
                     <div className="toolbar-dropdown-group">
-                      <div className="column"><a className="btn btn-sm btn-block btn-secondary" href="cart.html">View Cart</a></div>
-                      <div className="column"><a className="btn btn-sm btn-block btn-success" href="checkout-address.html">Checkout</a></div>
+                      <div className="column"><a className="btn btn-sm btn-block btn-secondary" href="#">View Cart</a></div>
+                      <div className="column"><a className="btn btn-sm btn-block btn-success" href="#">Checkout</a></div>
                     </div>
                   </div>
                 </div>
@@ -409,6 +309,7 @@ function App(props) {
           <Route path="/categories/:categoryId/:page" exact component={Products} />
           <Route path="/products/:productId" exact component={Product} />
           <Route path="/products/:productId/:productName" exact component={Product} />
+          <Route path="/basket" exact component={BasketPage} />
 
           <footer className="site-footer">
             <div className="container">
@@ -436,7 +337,7 @@ function App(props) {
                       <li><a href="#">Home</a></li>
                       <li><a href="#">Categories</a></li>
                       <li><a href="#">Favourites</a></li>
-                      <li><a href="#">Basket</a></li>
+                      <li><Link to="/basket">Basket</Link></li>
                       <li><a href="#">Contact</a></li>
                     </ul>
                   </section>

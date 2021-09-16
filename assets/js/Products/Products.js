@@ -12,26 +12,40 @@ function Products(props) {
     axios.get(`${baseUrl}api/categories/${props.match.params.categoryId}/products?page=${page}`).then((response) => {
       setProducts(response.data.products);
       setPagesCount(response.data.pagesCount);
+
+      setTimeout(() => {
+        initToasts();
+        initFavouriteButtons();
+      });
     });
   }
 
   useEffect(() => {
-    axios.get(`${baseUrl}api/categories/${props.match.params.categoryId}`).then((response) => {
-      setCategory(response.data);
-    });
-    $('.site-backdrop').click();
-    
     if (props.match.params.page) {
       setPage(props.match.params.page);
       getProducts(props.match.params.page);
     } else {
       getProducts(page);
     }
+
+    $('.site-backdrop').click();
     window.scroll(0, 0);
 
+    axios.get(`${baseUrl}api/categories/${props.match.params.categoryId}`).then((response) => {
+      setCategory(response.data);
+    });
+
     return () => {
-    }
+
+    };
   }, [props.match.params.categoryId, props.match.params.page]);
+
+  function addToBasket(product) {
+    basket.addProduct({
+      ...product,
+      quantity: 1,
+    });
+  }
 
   return (
     <div className="Products">
@@ -101,8 +115,21 @@ function Products(props) {
                       </h4>
                       <p className="hidden-xs-down" dangerouslySetInnerHTML={{__html: product.description.substr(0, 100) + '...'}}></p>
                       <div className="product-buttons">
-                        <button className="btn btn-outline-secondary btn-sm btn-wishlist" data-toggle="tooltip" title="Whishlist"><i className="icon-heart"></i></button>
-                        <button className="btn btn-outline-primary btn-sm" data-toast data-toast-type="success" data-toast-position="topRight" data-toast-icon="icon-circle-check" data-toast-title="Product" data-toast-message="successfuly added to cart!">Add to Cart</button>
+                        <button className="btn btn-outline-secondary btn-sm btn-wishlist" data-toggle="tooltip" title="Whishlist">
+                          <i className="icon-heart"></i>
+                        </button>
+                        <button
+                          className="btn btn-outline-primary btn-sm"
+                          data-toast
+                          data-toast-type="success"
+                          data-toast-position="topRight"
+                          data-toast-icon="icon-circle-check"
+                          data-toast-title={product.name}
+                          data-toast-message="Το προϊόν προστέθηκε στο καλάθι σας!"
+                          onClick={() => addToBasket(product)}
+                        >
+                          Add to Cart
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -113,35 +140,25 @@ function Products(props) {
               <nav className="pagination">
                 <div className="column">
                   <ul className="pages">
-                  {
-                      parseInt(page) > 2
-                        ? <li>
-                            <Link to={`/categories/${props.match.params.categoryId}/1`}>1</Link>
-                          </li>
-                        : ''  
-                    }
                     {
-                      parseInt(page) > 1
-                        ? <li>
-                            <Link to={`/categories/${props.match.params.categoryId}/${parseInt(page) - 1}`}>{parseInt(page) - 1}</Link>
-                          </li>
-                        : ''  
-                    }
-                    <li className="active">  
-                      <Link to={`/categories/${props.match.params.categoryId}/${parseInt(page)}`}>{parseInt(page)}</Link>
-                    </li>
-                    {
-                      parseInt(page) + 1 < pagesCount
-                        ? <li>
-                            <Link to={`/categories/${props.match.params.categoryId}/${parseInt(page) + 1}`}>{parseInt(page) + 1}</Link>
-                          </li>
+                      (parseInt(page) + 1 > pagesCount && pagesCount >= 3)
+                        ? <li><Link to={`/categories/${category}/${parseInt(page) - 2}`}>{parseInt(page) - 2}</Link></li>
                         : ''
                     }
                     {
-                      pagesCount > 1 && parseInt(page) + 1 <= pagesCount
-                        ? <li>
-                            <Link to={`/categories/${props.match.params.categoryId}/${pagesCount}`}>{pagesCount}</Link>
-                          </li>
+                      page > 1
+                        ? <li><Link to={`/categories/${category}/${parseInt(page) - 1}`}>{parseInt(page) - 1}</Link></li>
+                        : ''
+                    }
+                    <li className="active"><Link to={`/categories/${category}/${page}`}>{page}</Link></li>
+                    {
+                      parseInt(page) + 1 <= pagesCount
+                        ? <li><Link to={`/categories/${category}/${parseInt(page) + 1}`}>{parseInt(page) + 1}</Link></li>
+                        : ''
+                    }
+                    {
+                      parseInt(page) <= 1 && pagesCount >= 3
+                        ? <li><Link to={`/categories/${category}/${parseInt(page) + 2}`}>{parseInt(page) + 2}</Link></li>
                         : ''
                     }
                   </ul>

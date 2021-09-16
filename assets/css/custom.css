@@ -1,3 +1,16 @@
 .hidden {
   display: none !important;
 }
+
+.fs-12 {
+  font-size: 12px !important;
+}
+
+.my-1 {
+  margin-top: 10px !important;
+  margin-bottom: 10px !important;
+}
+
+.iziToast-capsule {
+  height: unset !important;
+}
